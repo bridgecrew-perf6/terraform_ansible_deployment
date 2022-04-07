@@ -1,0 +1,7 @@
+env = "qa"
+project_tag = "redis"
+vpc_cidr = "10.20.0.0/16"
+sub_cidr = "10.20.30.0/24"
+ami_id = "ami-0c02fb55956c7d316"
+instance_type = "t2.medium"
+az = "us-east-1a"
