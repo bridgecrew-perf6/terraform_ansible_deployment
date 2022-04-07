@@ -52,6 +52,7 @@ resource "aws_default_route_table" "rtb" {
 
 resource "aws_security_group" "sg" {
     vpc_id = aws_vpc.vpc.id
+    name = "${var.env}-sg"
 
     ingress {
         from_port = 22
@@ -90,10 +91,15 @@ resource "aws_security_group" "sg" {
     }
 }
 
+/*
+Need to figure out a better way to do this as it currently deletes the key every single time.
+Causes a lot of needless work re-importing the key to ssh in.
+
 resource "tls_private_key" "redis-key" {
     algorithm = "RSA"
     rsa_bits = 4096
 }
+
 
 resource aws_key_pair "aws-redis-key" {
     key_name = "redis_key"
@@ -102,6 +108,7 @@ resource aws_key_pair "aws-redis-key" {
         command = "echo '${tls_private_key.redis-key.private_key_pem}' > ../Keys/redis.pem"
     }
 }
+*/
 
 resource "aws_instance" "server1" {
     ami = var.ami_id
@@ -112,7 +119,7 @@ resource "aws_instance" "server1" {
     availability_zone = var.az
     associate_public_ip_address = true
 
-    key_name = aws_key_pair.aws-redis-key.key_name
+    key_name = "redis_key"
 
     tags = {
         project: var.project_tag
@@ -124,7 +131,9 @@ resource "aws_instance" "server1" {
   //  }
 }
 
-output "key_contents" {
-    value = tls_private_key.redis-key.private_key_pem
-    sensitive = true
+resource "local_file" "redis_hosts" {
+    content = templatefile("hosts.tftpl", {
+        redis_ip    =   aws_instance.server1.public_ip
+    })
+    filename = "../Ansible/hosts"
 }
