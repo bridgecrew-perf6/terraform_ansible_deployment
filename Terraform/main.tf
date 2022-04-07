@@ -105,7 +105,7 @@ resource aws_key_pair "aws-redis-key" {
     key_name = "redis_key"
     public_key = tls_private_key.redis-key.public_key_openssh
     provisioner "local-exec" {
-        command = "echo '${tls_private_key.redis-key.private_key_pem}' > ../Keys/redis.pem"
+        command = "echo '${tls_private_key.redis-key.private_key_pem}' > ../Keys/redis.pem" && chmod 700 ../Keys/redis.pem
     }
 }
 */

@@ -1,0 +1,39 @@
+---
+- name: Ensure redislabs user/groups exist
+  hosts: redis
+  become: yes
+  become_user: root
+  tasks:
+    - name: Ensure redislabs group exists
+      group:
+        name: redislabs
+        state: present
+    - name: Ensure redislabs user exists
+      user: name=redislabs state=present groups=redislabs append=yes 
+
+- name: Ensure redis required packages are installed
+  hosts: redis
+  become: yes
+  become_user: root
+  tasks:
+    - name: Ensure redis required packages are installed
+      apt:
+        update-cache: yes
+
+- name: Copy Redis files and unpack
+  hosts: redis
+  become: yes
+  become_user: root
+  tasks:
+    - name: Ensure destination path exists
+      file:
+        path: /root/redis
+        state: directory
+    - name: Ensure redis files are extracted
+      unarchive:
+        src: ../Code/redislabs-6.2.8-53-bionic-amd64.tar
+        dest: /root/redis
+        creates: /root/redis/install.sh
+    - name: redis install script run
+      shell: cd /root/redis && sudo ./install.sh -y && touch redis_installed creates=redis_installed # Having issues finding prerequisites, no installation candidates for libreadline7
+    
