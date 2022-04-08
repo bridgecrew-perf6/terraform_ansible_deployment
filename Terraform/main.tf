@@ -125,10 +125,11 @@ resource "aws_instance" "server1" {
         project: var.project_tag
         Name = "${var.env}-redis"
     }   
+}
 
-  //  provisioner "local_exec" {
-  //      command = "ansible-playbook <path to playbook yaml>"
-  //  }
+resource "time_sleep" "wait_for_ssh" {
+    depends_on = [aws_instance.server1]
+    create_duration = "30s"
 }
 
 resource "local_file" "redis_hosts" {
@@ -136,4 +137,10 @@ resource "local_file" "redis_hosts" {
         redis_ip    =   aws_instance.server1.public_ip
     })
     filename = "../Ansible/hosts"
+
+    depends_on = [time_sleep.wait_for_ssh]
+
+    provisioner "local-exec" {
+        command = "ansible-playbook -i ../Ansible/hosts ../Ansible/configure_redis_server.yaml"
+    }
 }
