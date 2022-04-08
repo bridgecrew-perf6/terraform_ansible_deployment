@@ -19,6 +19,12 @@
     - name: Ensure redis required packages are installed
       apt:
         update-cache: yes
+        name: 
+          - make
+          - gcc
+          - pkg-config
+          - libsystemd-dev
+        state: latest
 
 - name: Copy Redis files and unpack
   hosts: redis
@@ -29,11 +35,34 @@
       file:
         path: /root/redis
         state: directory
+    - name: download latest redis version
+      get_url:
+        dest: /root/redis
+        url: https://download.redis.io/redis-stable.tar.gz
     - name: Ensure redis files are extracted
       unarchive:
-        src: ../Code/redislabs-6.2.8-53-bionic-amd64.tar
+        src: /root/redis/redis-stable.tar.gz
         dest: /root/redis
-        creates: /root/redis/install.sh
+        remote_src: yes
+        creates: /root/redis/redis-stable
     - name: redis install script run
-      shell: cd /root/redis && sudo ./install.sh -y && touch redis_installed creates=redis_installed # Having issues finding prerequisites, no installation candidates for libreadline7
+      shell: cd /root/redis/redis-stable && make BUILD_WITH_SYSTEMD=yes USE_SYSTEMD=yes && make install creates=/usr/local/bin/redis-server
+    - name: copy redis service to systemd
+      copy:
+        src: /root/redis/redis-stable/utils/systemd-redis_server.service
+        dest: /etc/systemd/system/redis.service
+        remote_src: yes
+    - name: start redis server service
+      service:
+        name: redis
+        enabled: yes
+        state: started
+
+- name: ensure redis is accepting connections
+  hosts: redis
+  become: yes
+  become_user: root
+  tasks:
+    - name: ping redis locally
+      command: redis-cli ping
     
